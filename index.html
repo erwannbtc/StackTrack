@@ -412,8 +412,8 @@
         function generateChartData() {
             if (appData.transactions.length === 0) {
                 return {
-                    labels: ['Début'],
-                    data: [0],
+                    labels: [],
+                    data: [],
                     min: 0
                 };
             }
@@ -457,23 +457,21 @@
                 }
             });
 
-            // Add starting point
-            if (filteredTransactions.length > 0) {
-                data.push(runningTotal);
-                labels.push('Début');
-            }
-
+            // Only add transactions to chart, no "Début" point
             filteredTransactions.forEach(transaction => {
                 runningTotal += transaction.amount;
                 labels.push(new Date(transaction.date).toLocaleDateString('fr-FR'));
                 data.push(runningTotal);
             });
 
-            // Calculate smart minimum for Y axis
-            const minValue = Math.min(...data);
-            const maxValue = Math.max(...data);
-            const range = maxValue - minValue;
-            const smartMin = Math.max(0, minValue - (range * 0.05));
+            // Calculate smart minimum for Y axis only if we have data
+            let smartMin = 0;
+            if (data.length > 0) {
+                const minValue = Math.min(...data);
+                const maxValue = Math.max(...data);
+                const range = maxValue - minValue;
+                smartMin = Math.max(0, minValue - (range * 0.05));
+            }
 
             return { labels, data, min: smartMin };
         }
@@ -484,6 +482,17 @@
             if (!ctx) return;
             
             const chartData = generateChartData();
+            
+            // Don't create chart if no data
+            if (chartData.data.length === 0) {
+                ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+                const context = ctx.getContext('2d');
+                context.fillStyle = '#666';
+                context.font = '16px system-ui';
+                context.textAlign = 'center';
+                context.fillText('Aucune transaction', ctx.width / 2, ctx.height / 2);
+                return;
+            }
             
             stackChart = new Chart(ctx.getContext('2d'), {
                 type: 'line',
@@ -560,10 +569,22 @@
         function updateChart() {
             if (stackChart) {
                 const chartData = generateChartData();
+                
+                // If no data, destroy chart and show message
+                if (chartData.data.length === 0) {
+                    stackChart.destroy();
+                    stackChart = null;
+                    initChart();
+                    return;
+                }
+                
                 stackChart.data.labels = chartData.labels;
                 stackChart.data.datasets[0].data = chartData.data;
                 stackChart.options.scales.y.min = chartData.min;
                 stackChart.update('active');
+            } else {
+                // Chart doesn't exist, create it
+                initChart();
             }
         }
 
@@ -645,19 +666,85 @@
             addSwipeListeners();
         }
 
-        // Add swipe listeners to transaction items (simplified)
+        // Add swipe listeners to transaction items with real swipe support
         function addSwipeListeners() {
             const items = document.querySelectorAll('.transaction-item');
             
             items.forEach(item => {
-                // Simple click to reveal delete button instead of swipe for now
-                item.addEventListener('click', function() {
+                let startX = 0;
+                let currentX = 0;
+                let isDragging = false;
+                let moved = false;
+                
+                // Touch events for mobile swipe
+                item.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    currentX = startX;
+                    isDragging = true;
+                    moved = false;
+                    item.style.transition = 'none';
+                }, { passive: true });
+                
+                item.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return;
+                    
+                    currentX = e.touches[0].clientX;
+                    const diffX = startX - currentX;
+                    moved = true;
+                    
+                    if (diffX > 0) {
+                        const translateX = Math.min(diffX, 80);
+                        item.style.transform = `translateX(-${translateX}px)`;
+                        
+                        const actions = item.querySelector('.swipe-actions');
+                        if (diffX > 40) {
+                            actions.style.transform = 'translateX(0)';
+                        }
+                    }
+                }, { passive: true });
+                
+                item.addEventListener('touchend', () => {
+                    if (!isDragging) return;
+                    
+                    isDragging = false;
+                    item.style.transition = 'transform 0.3s ease';
+                    
+                    const diffX = startX - currentX;
+                    
+                    if (diffX > 40) {
+                        item.classList.add('swiped');
+                        item.style.transform = 'translateX(-80px)';
+                        const actions = item.querySelector('.swipe-actions');
+                        actions.style.transform = 'translateX(0)';
+                    } else {
+                        item.classList.remove('swiped');
+                        item.style.transform = 'translateX(0)';
+                        const actions = item.querySelector('.swipe-actions');
+                        actions.style.transform = 'translateX(100%)';
+                    }
+                }, { passive: true });
+                
+                // Click event for non-touch devices or if no swipe occurred
+                item.addEventListener('click', function(e) {
+                    if (moved) return; // Don't trigger click if we swiped
+                    
                     const actions = item.querySelector('.swipe-actions');
-                    if (actions.style.transform === 'translateX(0px)') {
+                    if (item.classList.contains('swiped')) {
+                        item.classList.remove('swiped');
                         actions.style.transform = 'translateX(100%)';
                         item.style.transform = 'translateX(0)';
                     } else {
-                        actions.style.transform = 'translateX(0px)';
+                        // Close other open items first
+                        items.forEach(otherItem => {
+                            if (otherItem !== item) {
+                                otherItem.classList.remove('swiped');
+                                otherItem.style.transform = 'translateX(0)';
+                                otherItem.querySelector('.swipe-actions').style.transform = 'translateX(100%)';
+                            }
+                        });
+                        
+                        item.classList.add('swiped');
+                        actions.style.transform = 'translateX(0)';
                         item.style.transform = 'translateX(-80px)';
                     }
                 });
@@ -1318,6 +1405,16 @@
             position: relative;
             overflow: hidden;
             touch-action: pan-y;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .transaction-item.swiped {
+            transform: translateX(-80px);
+        }
+
+        .transaction-item.swiped .swipe-actions {
+            transform: translateX(0);
         }
 
         .export-import-section {
@@ -1401,6 +1498,12 @@
             color: #fff;
         }
 
+        .light-theme .form-input {
+            background: #ffffff;
+            color: #333;
+            border-color: #e9ecef;
+        }
+
         .form-input:focus {
             outline: none;
             border-color: #f7931a;
@@ -1408,8 +1511,16 @@
             transform: scale(1.02);
         }
 
+        .light-theme .form-input:focus {
+            background: #f8f9fa;
+        }
+
         .form-input::placeholder {
             color: #666;
+        }
+
+        .light-theme .form-input::placeholder {
+            color: #999;
         }
 
         .btn {
