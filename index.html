@@ -839,6 +839,15 @@
                     </div>
                 </div>
 
+                <div class="card animate-in">
+                    <h3>Évolution de l'Exclusivité</h3>
+                    <p style="font-size: 12px; color: #999; margin-bottom: 15px;">Nombre maximum de détenteurs pouvant posséder votre montant</p>
+                    <div class="chart-container">
+                        <canvas id="exclusivityChart"></canvas>
+                        <div id="exclusivityPercentage" class="chart-percentage positive">0</div>
+                    </div>
+                </div>
+
                 <div class="era-stats">
                     <h3>Accumulation par Era</h3>
                     <div id="eraStats"></div>
@@ -995,6 +1004,7 @@
     <script>
         // ============ GLOBAL VARIABLES ============
         let stackChart = null;
+        let exclusivityChart = null;
         let currentTimeframe = 'all';
         let worldPopulation = 8100000000;
         let carouselIndex = 0;
@@ -1581,6 +1591,106 @@
             return { labels, data, min: smartMin, percentageChange };
         }
 
+        // Generate exclusivity chart data (number of max holders)
+        function generateExclusivityChartData() {
+            if (appData.transactions.length === 0) {
+                return {
+                    labels: [],
+                    data: [],
+                    min: 0,
+                    maxHolders: 0
+                };
+            }
+
+            // Sort transactions by date
+            const sortedTransactions = [...appData.transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // Filter by timeframe
+            const now = new Date();
+            let cutoffDate;
+
+            switch (currentTimeframe) {
+                case '1w':
+                    cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '1m':
+                    cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'ytd':
+                    cutoffDate = new Date(now.getFullYear(), 0, 1);
+                    break;
+                case '1y':
+                    cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'all':
+                default:
+                    cutoffDate = new Date(0);
+                    break;
+            }
+
+            // Calculer le stack au début de la période
+            let stackAtPeriodStart = 0;
+            const transactionsBeforePeriod = sortedTransactions.filter(t => new Date(t.date) < cutoffDate);
+            transactionsBeforePeriod.forEach(t => stackAtPeriodStart += t.amount);
+
+            // Filtrer les transactions dans la période
+            const filteredTransactions = sortedTransactions.filter(t => new Date(t.date) >= cutoffDate);
+
+            const labels = [];
+            const data = [];
+            let runningTotal = stackAtPeriodStart;
+
+            // Si on a des transactions avant la période et des transactions dans la période,
+            // ajouter un point de départ
+            if (stackAtPeriodStart > 0 && filteredTransactions.length > 0) {
+                labels.push(cutoffDate.toLocaleDateString('fr-FR'));
+                const maxHolders = stackAtPeriodStart > 0 ? Math.floor(21000000 / stackAtPeriodStart) : 0;
+                data.push(maxHolders);
+            }
+
+            // Pour chaque transaction dans la période, ajouter un point
+            filteredTransactions.forEach(transaction => {
+                runningTotal += transaction.amount;
+                const transactionDate = new Date(transaction.date);
+                labels.push(transactionDate.toLocaleDateString('fr-FR'));
+                const maxHolders = runningTotal > 0 ? Math.floor(21000000 / runningTotal) : 0;
+                data.push(maxHolders);
+            });
+
+            // Si aucune transaction dans la période mais on a un stack existant
+            if (filteredTransactions.length === 0 && stackAtPeriodStart > 0) {
+                labels.push(cutoffDate.toLocaleDateString('fr-FR'));
+                const maxHolders = Math.floor(21000000 / stackAtPeriodStart);
+                data.push(maxHolders);
+                labels.push(now.toLocaleDateString('fr-FR'));
+                data.push(maxHolders);
+            }
+
+            // Si aucune transaction dans la période et aucun stack avant
+            if (filteredTransactions.length === 0 && stackAtPeriodStart === 0) {
+                return {
+                    labels: [],
+                    data: [],
+                    min: 0,
+                    maxHolders: 0
+                };
+            }
+
+            // Calculate smart minimum for Y axis
+            let smartMin = 0;
+            if (data.length > 0) {
+                const minValue = Math.min(...data);
+                const maxValue = Math.max(...data);
+                const range = maxValue - minValue;
+                smartMin = Math.max(0, minValue - (range * 0.1));
+            }
+
+            // Get current max holders for display
+            const currentMaxHolders = data.length > 0 ? data[data.length - 1] : 0;
+
+            return { labels, data, min: smartMin, maxHolders: currentMaxHolders };
+        }
+
         // Initialize chart with modern design
         function initChart() {
             const ctx = document.getElementById('stackChart');
@@ -1701,17 +1811,136 @@
             });
         }
 
+        // Initialize exclusivity chart
+        function initExclusivityChart() {
+            const ctx = document.getElementById('exclusivityChart');
+            if (!ctx) return;
+
+            const chartData = generateExclusivityChartData();
+
+            // Don't create chart if no data
+            if (chartData.data.length === 0) {
+                const context = ctx.getContext('2d');
+                context.clearRect(0, 0, ctx.width, ctx.height);
+                context.fillStyle = '#666';
+                context.font = '16px system-ui';
+                context.textAlign = 'center';
+                context.fillText('Aucune transaction dans cette période', ctx.width / 2, ctx.height / 2);
+
+                // Update max holders display
+                const exclusivityElement = document.getElementById('exclusivityPercentage');
+                if (exclusivityElement) {
+                    exclusivityElement.textContent = '0';
+                    exclusivityElement.className = 'chart-percentage';
+                }
+                return;
+            }
+
+            // Update max holders display
+            const exclusivityElement = document.getElementById('exclusivityPercentage');
+            if (exclusivityElement) {
+                const maxHolders = chartData.maxHolders;
+                exclusivityElement.textContent = maxHolders.toLocaleString();
+                exclusivityElement.className = 'chart-percentage positive';
+            }
+
+            exclusivityChart = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Max Détenteurs',
+                        data: chartData.data,
+                        borderColor: '#ff6b35',
+                        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: '#ff6b35',
+                        pointBorderColor: '#121212',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: '#f7931a',
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            left: -10,
+                            right: -10,
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed.y;
+                                    return [
+                                        `Date: ${label}`,
+                                        `Max détenteurs: ${value.toLocaleString()}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            display: false,
+                            beginAtZero: false,
+                            min: chartData.min,
+                            grid: {
+                                display: false
+                            },
+                            border: {
+                                display: false
+                            },
+                            ticks: {
+                                display: false
+                            }
+                        },
+                        x: {
+                            display: false,
+                            grid: {
+                                display: false
+                            },
+                            border: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeInOutCubic'
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
         // CORRIGÉ : Update chart with better management
         function updateChart() {
+            // Update stack chart
             if (stackChart) {
                 const chartData = generateChartData();
 
-                // If no data, destroy chart and show message
                 if (chartData.data.length === 0) {
                     stackChart.destroy();
                     stackChart = null;
                     
-                    // Show no data message
                     const ctx = document.getElementById('stackChart');
                     if (ctx) {
                         const context = ctx.getContext('2d');
@@ -1722,41 +1951,86 @@
                         context.fillText('Aucune transaction dans cette période', ctx.width / 2, ctx.height / 2);
                     }
                     
-                    // Update percentage
                     const percentageElement = document.getElementById('chartPercentage');
                     if (percentageElement) {
                         percentageElement.textContent = '0%';
                         percentageElement.className = 'chart-percentage';
                     }
-                    return;
-                }
+                } else {
+                    const percentageElement = document.getElementById('chartPercentage');
+                    if (percentageElement) {
+                        const percentage = chartData.percentageChange;
+                        percentageElement.textContent = (percentage >= 0 ? '+' : '') + percentage.toFixed(1) + '%';
+                        percentageElement.className = percentage >= 0 ? 'chart-percentage positive' : 'chart-percentage negative';
+                    }
 
-                // Update percentage display
-                const percentageElement = document.getElementById('chartPercentage');
-                if (percentageElement) {
-                    const percentage = chartData.percentageChange;
-                    percentageElement.textContent = (percentage >= 0 ? '+' : '') + percentage.toFixed(1) + '%';
-                    percentageElement.className = percentage >= 0 ? 'chart-percentage positive' : 'chart-percentage negative';
+                    stackChart.data.labels = chartData.labels;
+                    stackChart.data.datasets[0].data = chartData.data;
+                    stackChart.options.scales.y.min = chartData.min;
+                    
+                    stackChart.options.plugins.tooltip.callbacks.label = function(context) {
+                        const label = context.label || '';
+                        const value = formatBTC(context.parsed.y);
+                        return [
+                            `Date: ${label}`,
+                            `Stack: ${value} ₿`
+                        ];
+                    };
+                    
+                    stackChart.update('active');
                 }
-
-                stackChart.data.labels = chartData.labels;
-                stackChart.data.datasets[0].data = chartData.data;
-                stackChart.options.scales.y.min = chartData.min;
-                
-                // Update tooltip to show correct dates
-                stackChart.options.plugins.tooltip.callbacks.label = function(context) {
-                    const label = context.label || '';
-                    const value = formatBTC(context.parsed.y);
-                    return [
-                        `Date: ${label}`,
-                        `Stack: ${value} ₿`
-                    ];
-                };
-                
-                stackChart.update('active');
             } else {
-                // Chart doesn't exist, create it
                 initChart();
+            }
+
+            // Update exclusivity chart
+            if (exclusivityChart) {
+                const exclusivityData = generateExclusivityChartData();
+
+                if (exclusivityData.data.length === 0) {
+                    exclusivityChart.destroy();
+                    exclusivityChart = null;
+                    
+                    const ctx = document.getElementById('exclusivityChart');
+                    if (ctx) {
+                        const context = ctx.getContext('2d');
+                        context.clearRect(0, 0, ctx.width, ctx.height);
+                        context.fillStyle = '#666';
+                        context.font = '16px system-ui';
+                        context.textAlign = 'center';
+                        context.fillText('Aucune transaction dans cette période', ctx.width / 2, ctx.height / 2);
+                    }
+                    
+                    const exclusivityElement = document.getElementById('exclusivityPercentage');
+                    if (exclusivityElement) {
+                        exclusivityElement.textContent = '0';
+                        exclusivityElement.className = 'chart-percentage';
+                    }
+                } else {
+                    const exclusivityElement = document.getElementById('exclusivityPercentage');
+                    if (exclusivityElement) {
+                        const maxHolders = exclusivityData.maxHolders;
+                        exclusivityElement.textContent = maxHolders.toLocaleString();
+                        exclusivityElement.className = 'chart-percentage positive';
+                    }
+
+                    exclusivityChart.data.labels = exclusivityData.labels;
+                    exclusivityChart.data.datasets[0].data = exclusivityData.data;
+                    exclusivityChart.options.scales.y.min = exclusivityData.min;
+                    
+                    exclusivityChart.options.plugins.tooltip.callbacks.label = function(context) {
+                        const label = context.label || '';
+                        const value = context.parsed.y;
+                        return [
+                            `Date: ${label}`,
+                            `Max détenteurs: ${value.toLocaleString()}`
+                        ];
+                    };
+                    
+                    exclusivityChart.update('active');
+                }
+            } else {
+                initExclusivityChart();
             }
         }
 
