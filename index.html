@@ -511,6 +511,136 @@
             transition: width 0.5s ease;
         }
 
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .theme-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(30, 30, 30, 0.5);
+            border: 2px solid rgba(51, 51, 51, 0.6);
+        }
+
+        .theme-option:hover {
+            transform: translateY(-3px);
+            border-color: rgba(247, 147, 26, 0.5);
+            background: rgba(30, 30, 30, 0.8);
+        }
+
+        .theme-option.active {
+            border-color: var(--theme-primary, #f7931a);
+            background: rgba(247, 147, 26, 0.1);
+            transform: scale(1.05);
+        }
+
+        .theme-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-option span {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            color: #ccc;
+        }
+
+        .theme-option.active span {
+            color: #fff;
+        }
+
+        /* CSS Custom Properties for theming */
+        :root {
+            --theme-primary: #f7931a;
+            --theme-secondary: #ff6b35;
+            --theme-gradient: linear-gradient(135deg, #f7931a, #ff6b35);
+        }
+
+        /* Apply theme variables to existing elements */
+        .header {
+            background: var(--theme-gradient);
+        }
+
+        .nav-tab.active {
+            background: var(--theme-gradient);
+        }
+
+        .btn:not(.btn-secondary) {
+            background: var(--theme-gradient);
+        }
+
+        .timeframe-btn.active {
+            background: var(--theme-gradient);
+            border-color: var(--theme-primary);
+        }
+
+        .carousel-dot.active {
+            background: var(--theme-primary);
+        }
+
+        .floating-action {
+            background: var(--theme-gradient);
+        }
+
+        .objective-progress-bar {
+            background: var(--theme-gradient);
+        }
+
+        .carousel-progress-bar {
+            background: var(--theme-gradient);
+        }
+
+        .progress-carousel {
+            border-left-color: var(--theme-primary);
+        }
+
+        .era-name {
+            color: var(--theme-primary) !important;
+        }
+
+        .transaction-block {
+            color: var(--theme-primary) !important;
+        }
+
+        .stat-number {
+            color: var(--theme-primary) !important;
+        }
+
+        .chart-percentage.positive {
+            color: var(--theme-primary) !important;
+        }
+
+        .form-input:focus {
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 20px rgba(247, 147, 26, 0.2);
+        }
+
+        .card:hover {
+            border-color: var(--theme-primary);
+            box-shadow: 0 15px 40px rgba(247, 147, 26, 0.1);
+        }
+
+        .chart-container {
+            border: 1px solid var(--theme-primary);
+        }
+
+        .objective-actions {
+            border-top: 1px solid rgba(51, 51, 51, 0.3);
+            padding-top: 10px;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
@@ -564,7 +694,7 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(247, 147, 26, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
 
         .btn:active {
@@ -594,7 +724,7 @@
         }
 
         .stat-card:hover {
-            border-color: rgba(247, 147, 26, 0.3);
+            border-color: var(--theme-primary);
             transform: translateY(-2px);
         }
 
@@ -810,15 +940,25 @@
             <button class="nav-tab" onclick="showPage('add')">Stack</button>
             <button class="nav-tab" onclick="showPage('tools')">Outils</button>
             <button class="nav-tab" onclick="showPage('indicators')">Données</button>
+            <button class="nav-tab" onclick="showPage('settings')">⚙️</button>
         </div>
 
         <div class="content">
             <!-- Dashboard Page -->
             <div id="dashboard" class="page active">
-                <div class="progress-carousel">
+                <div class="progress-carousel" id="progressCarouselSection" style="display: none;">
                     <div class="carousel-container" id="carouselContainer">
                         <!-- Slides will be dynamically generated -->
+                        <div class="export-import-section">
+                    <h3>Sauvegarde</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn export-btn" onclick="exportData()">📤 Exporter</button>
+                        <button class="btn import-btn" onclick="importData()">📥 Importer</button>
+                        <input type="file" id="importFile" style="display: none;" accept=".json"
+                            onchange="handleImport(event)">
                     </div>
+                </div>
+            </div>
                     <div class="carousel-indicators" id="carouselIndicators">
                         <!-- Indicators will be dynamically generated -->
                     </div>
@@ -848,24 +988,14 @@
                     </div>
                 </div>
 
-                <div class="era-stats">
+                <div class="era-stats" id="eraStatsSection" style="display: none;">
                     <h3>Accumulation par Era</h3>
                     <div id="eraStats"></div>
                 </div>
 
-                <div class="objectives-list" id="activeObjectives">
+                <div class="objectives-list" id="activeObjectives" style="display: none;">
                     <h3>Objectifs Actifs</h3>
                     <div id="objectivesList"></div>
-                </div>
-
-                <div class="export-import-section">
-                    <h3>Sauvegarde</h3>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn export-btn" onclick="exportData()">📤 Exporter</button>
-                        <button class="btn import-btn" onclick="importData()">📥 Importer</button>
-                        <input type="file" id="importFile" style="display: none;" accept=".json"
-                            onchange="handleImport(event)">
-                    </div>
                 </div>
             </div>
 
@@ -873,30 +1003,33 @@
             <div id="add" class="page">
                 <div class="card">
                     <h3>Gérer votre Stack</h3>
-                    <form id="stackForm">
-                        <div class="form-group">
-                            <label class="form-label">Montant (₿)</label>
-                            <input type="number" class="form-input" id="amount" placeholder="0.00000000"
-                                step="0.00000001" required>
-                        </div>
-                        <div class="form-row">
+                    <button class="btn" onclick="toggleForm('stackForm')">💰 Ajouter/Retirer du Stack</button>
+                    <div id="stackFormContainer" style="display: none;">
+                        <form id="stackForm">
                             <div class="form-group">
-                                <label class="form-label">Date</label>
-                                <input type="date" class="form-input" id="date" required>
+                                <label class="form-label">Montant (₿)</label>
+                                <input type="number" class="form-input" id="amount" placeholder="0.00000000"
+                                    step="0.00000001" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Date</label>
+                                    <input type="date" class="form-input" id="date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Block (optionnel)</label>
+                                    <input type="number" class="form-input" id="blockHeight" placeholder="800000">
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Block (optionnel)</label>
-                                <input type="number" class="form-input" id="blockHeight" placeholder="800000">
+                                <label class="form-label">Description (optionnelle)</label>
+                                <input type="text" class="form-input" id="description" placeholder="Ex: Achat DCA mensuel">
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Description (optionnelle)</label>
-                            <input type="text" class="form-input" id="description" placeholder="Ex: Achat DCA mensuel">
-                        </div>
-                        <button type="submit" class="btn" data-action="add">Ajouter au Stack</button>
-                        <button type="button" class="btn btn-secondary" onclick="removeFromStack()">Retirer du
-                            Stack</button>
-                    </form>
+                            <button type="submit" class="btn" data-action="add">Ajouter au Stack</button>
+                            <button type="button" class="btn btn-secondary" onclick="removeFromStack()">Retirer du
+                                Stack</button>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="transaction-history">
@@ -990,7 +1123,7 @@
                         </div>
                     </div>
 
-                    <div class="card">
+                    <div class="card" style="margin-top: 20px;">
                         <h3>Halving</h3>
                         <p><strong>Era actuelle:</strong> <span id="currentEra">4</span></p>
                         <p><strong>Prochain halving:</strong> Bloc <span id="nextHalvingBlock">840000</span></p>
@@ -998,10 +1131,245 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page">
+                <div class="card">
+                    <h3>⚙️ Paramètres</h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Couleur du thème</label>
+                        <div class="theme-selector">
+                            <div class="theme-option" data-theme="orange" onclick="setTheme('orange')">
+                                <div class="theme-preview" style="background: linear-gradient(135deg, #f7931a, #ff6b35);"></div>
+                                <span>Orange Bitcoin</span>
+                            </div>
+                            <div class="theme-option" data-theme="blue" onclick="setTheme('blue')">
+                                <div class="theme-preview" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
+                                <span>Bleu Digital</span>
+                            </div>
+                            <div class="theme-option" data-theme="green" onclick="setTheme('green')">
+                                <div class="theme-preview" style="background: linear-gradient(135deg, #10b981, #059669);"></div>
+                                <span>Vert Profits</span>
+                            </div>
+                            <div class="theme-option" data-theme="purple" onclick="setTheme('purple')">
+                                <div class="theme-preview" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);"></div>
+                                <span>Violet Futur</span>
+                            </div>
+                            <div class="theme-option" data-theme="red" onclick="setTheme('red')">
+                                <div class="theme-preview" style="background: linear-gradient(135deg, #ef4444, #dc2626);"></div>
+                                <span>Rouge Fire</span>
+                            </div>
+                            <div class="theme-option" data-theme="teal" onclick="setTheme('teal')">
+                                <div class="theme-preview" style="background: linear-gradient(135deg, #14b8a6, #0d9488);"></div>
+                                <span>Turquoise Ocean</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Sauvegarde & Restauration</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <button class="btn export-btn" onclick="exportData()">📤 Exporter</button>
+                            <button class="btn import-btn" onclick="importData()">📥 Importer</button>
+                            <input type="file" id="importFile" style="display: none;" accept=".json"
+                                onchange="handleImport(event)">
+                        </div>
+                        <p style="font-size: 12px; color: #999;">
+                            💾 Exportez vos données pour les sauvegarder ou les transférer vers un autre appareil
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Informations</label>
+                        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; font-size: 14px;">
+                            <p><strong>Version:</strong> 1.0</p>
+                            <p><strong>Données stockées:</strong> Localement dans votre navigateur</p>
+                            <p><strong>Transactions:</strong> <span id="totalTransactions">0</span></p>
+                            <p><strong>Objectifs:</strong> <span id="totalObjectives">0</span></p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn btn-secondary" onclick="resetApp()">🔄 Réinitialiser l'application</button>
+                        <p style="font-size: 12px; color: #999; margin-top: 5px;">
+                            ⚠️ Cela supprimera toutes vos données. Pensez à exporter avant !
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // ============ THEME SYSTEM ============
+        let currentTheme = localStorage.getItem('theme') || 'orange';
+        
+        const themes = {
+            orange: {
+                primary: '#f7931a',
+                secondary: '#ff6b35',
+                gradient: 'linear-gradient(135deg, #f7931a, #ff6b35)'
+            },
+            blue: {
+                primary: '#3b82f6',
+                secondary: '#1d4ed8', 
+                gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+            },
+            green: {
+                primary: '#10b981',
+                secondary: '#059669',
+                gradient: 'linear-gradient(135deg, #10b981, #059669)'
+            },
+            purple: {
+                primary: '#8b5cf6',
+                secondary: '#7c3aed',
+                gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)'
+            },
+            red: {
+                primary: '#ef4444',
+                secondary: '#dc2626',
+                gradient: 'linear-gradient(135deg, #ef4444, #dc2626)'
+            },
+            teal: {
+                primary: '#14b8a6',
+                secondary: '#0d9488',
+                gradient: 'linear-gradient(135deg, #14b8a6, #0d9488)'
+            }
+        };
+
+        function setTheme(themeName) {
+            currentTheme = themeName;
+            localStorage.setItem('theme', themeName);
+            applyTheme();
+            updateThemeSelector();
+        }
+
+        function applyTheme() {
+            const theme = themes[currentTheme];
+            const root = document.documentElement;
+            
+            // Update CSS custom properties
+            root.style.setProperty('--theme-primary', theme.primary);
+            root.style.setProperty('--theme-secondary', theme.secondary);
+            root.style.setProperty('--theme-gradient', theme.gradient);
+
+            // Convert hex to rgba for transparency effects
+            const hexToRgba = (hex, alpha) => {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            };
+
+            // Update background gradients
+            const appContainer = document.querySelector('.app-container');
+            if (appContainer) {
+                const beforeStyle = `
+                    radial-gradient(circle at 25% 25%, ${hexToRgba(theme.primary, 0.08)} 0%, transparent 50%),
+                    radial-gradient(circle at 75% 75%, ${hexToRgba(theme.secondary, 0.06)} 0%, transparent 50%),
+                    radial-gradient(circle at 50% 10%, ${hexToRgba(theme.primary, 0.05)} 0%, transparent 60%),
+                    radial-gradient(circle at 20% 90%, ${hexToRgba(theme.secondary, 0.07)} 0%, transparent 40%),
+                    radial-gradient(circle at 80% 30%, ${hexToRgba(theme.primary, 0.04)} 0%, transparent 70%)
+                `;
+                
+                const afterStyle = `
+                    radial-gradient(circle at 60% 20%, ${hexToRgba(theme.primary, 0.03)} 0%, transparent 30%),
+                    radial-gradient(circle at 20% 80%, ${hexToRgba(theme.secondary, 0.04)} 0%, transparent 25%),
+                    radial-gradient(circle at 80% 60%, ${hexToRgba(theme.primary, 0.035)} 0%, transparent 35%)
+                `;
+
+                // Apply background gradients via CSS
+                const style = document.getElementById('dynamic-theme-style') || document.createElement('style');
+                style.id = 'dynamic-theme-style';
+                style.textContent = `
+                    .app-container::before {
+                        background: ${beforeStyle} !important;
+                    }
+                    .app-container::after {
+                        background: ${afterStyle} !important;
+                    }
+                    .progress-carousel {
+                        background: ${hexToRgba(theme.primary, 0.1)} !important;
+                        border-left-color: ${theme.primary} !important;
+                    }
+                    .chart-container {
+                        border-color: ${hexToRgba(theme.primary, 0.1)} !important;
+                    }
+                    .carousel-slide h4 {
+                        color: ${theme.primary} !important;
+                    }
+                    .era-name {
+                        color: ${theme.primary} !important;
+                    }
+                    .stat-number {
+                        color: ${theme.primary} !important;
+                    }
+                    .transaction-block {
+                        color: ${theme.primary} !important;
+                    }
+                    .chart-percentage.positive {
+                        color: ${theme.primary} !important;
+                    }
+                `;
+                
+                if (!document.getElementById('dynamic-theme-style')) {
+                    document.head.appendChild(style);
+                } else {
+                    style.textContent = style.textContent;
+                }
+            }
+
+            // Apply theme to charts if they exist
+            if (stackChart) {
+                stackChart.data.datasets[0].borderColor = theme.primary;
+                stackChart.data.datasets[0].backgroundColor = hexToRgba(theme.primary, 0.1);
+                stackChart.data.datasets[0].pointBackgroundColor = theme.primary;
+                stackChart.data.datasets[0].pointHoverBackgroundColor = theme.secondary;
+                stackChart.update('none');
+            }
+
+            if (exclusivityChart) {
+                exclusivityChart.data.datasets[0].borderColor = theme.secondary;
+                exclusivityChart.data.datasets[0].backgroundColor = hexToRgba(theme.secondary, 0.1);
+                exclusivityChart.data.datasets[0].pointBackgroundColor = theme.secondary;
+                exclusivityChart.data.datasets[0].pointHoverBackgroundColor = theme.primary;
+                exclusivityChart.update('none');
+            }
+        }
+
+        function updateThemeSelector() {
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            const activeOption = document.querySelector(`[data-theme="${currentTheme}"]`);
+            if (activeOption) {
+                activeOption.classList.add('active');
+            }
+        }
+
+        function updateSettingsInfo() {
+            const totalTransactions = document.getElementById('totalTransactions');
+            const totalObjectives = document.getElementById('totalObjectives');
+            
+            if (totalTransactions) {
+                totalTransactions.textContent = appData.transactions.length;
+            }
+            
+            if (totalObjectives) {
+                totalObjectives.textContent = appData.objectives.length;
+            }
+        }
+
+        function resetApp() {
+            if (confirm('⚠️ Êtes-vous sûr de vouloir réinitialiser l\'application ?\n\nCela supprimera TOUTES vos données :\n• Transactions\n• Objectifs\n• Paramètres\n\nCette action est irréversible !')) {
+                if (confirm('Dernière confirmation : Supprimer toutes les données ?')) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            }
+        }
         // ============ GLOBAL VARIABLES ============
         let stackChart = null;
         let exclusivityChart = null;
@@ -1088,12 +1456,23 @@
             return BITCOIN_ERAS[BITCOIN_ERAS.length - 1];
         }
 
+        // Update carousel with conditional visibility
         function updateCarousel() {
             const slides = generateCarouselSlides();
             const container = document.getElementById('carouselContainer');
             const indicators = document.getElementById('carouselIndicators');
+            const carouselSection = document.getElementById('progressCarouselSection');
             
-            if (!container || !indicators) return;
+            if (!container || !indicators || !carouselSection) return;
+
+            // Hide carousel if no meaningful data to show
+            if (slides.length <= 1 && appData.stack === 0) {
+                carouselSection.style.display = 'none';
+                return;
+            }
+
+            // Show carousel if there's data
+            carouselSection.style.display = 'block';
 
             // Generate slides HTML
             container.innerHTML = slides.map(slide => `
@@ -1183,6 +1562,9 @@
                             updateTransactionHistory();
                         } else if (pageId === 'tools') {
                             updateAllObjectivesList();
+                        } else if (pageId === 'settings') {
+                            updateSettingsInfo();
+                            updateThemeSelector();
                         }
                     }
                 } catch (error) {
@@ -1332,6 +1714,12 @@
                 // Reset form
                 document.getElementById('stackForm').reset();
                 document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+                // Auto-close form after successful removal
+                const formContainer = document.getElementById('stackFormContainer');
+                if (formContainer) {
+                    formContainer.style.display = 'none';
+                }
             } else {
                 alert('Montant invalide ou supérieur au stack actuel !');
             }
@@ -1438,10 +1826,23 @@
 
         // Update era statistics display
         function updateEraStats() {
+            const eraSection = document.getElementById('eraStatsSection');
             const container = document.getElementById('eraStats');
-            if (!container) return;
+            if (!container || !eraSection) return;
 
             const eraStats = calculateEraStats();
+            
+            // Check if there's any era data
+            const hasEraData = Object.keys(eraStats).some(era => eraStats[era].amount !== 0);
+
+            if (!hasEraData) {
+                // Hide the entire era section if no data
+                eraSection.style.display = 'none';
+                return;
+            }
+
+            // Show the section if there's data
+            eraSection.style.display = 'block';
 
             container.innerHTML = Object.keys(eraStats)
                 .filter(era => eraStats[era].amount !== 0)
@@ -1460,7 +1861,7 @@
                             </div>
                         </div>
                     `;
-                }).join('') || '<p style="text-align: center; color: #666; padding: 20px;">Aucune donnée par era</p>';
+                }).join('');
         }
 
         // Update total BTC display
@@ -1696,6 +2097,12 @@
             const ctx = document.getElementById('stackChart');
             if (!ctx) return;
 
+            // Destroy existing chart if it exists
+            if (stackChart) {
+                stackChart.destroy();
+                stackChart = null;
+            }
+
             const chartData = generateChartData();
 
             // Don't create chart if no data
@@ -1815,6 +2222,12 @@
         function initExclusivityChart() {
             const ctx = document.getElementById('exclusivityChart');
             if (!ctx) return;
+
+            // Destroy existing chart if it exists
+            if (exclusivityChart) {
+                exclusivityChart.destroy();
+                exclusivityChart = null;
+            }
 
             const chartData = generateExclusivityChartData();
 
@@ -2289,7 +2702,7 @@
                 }
 
                 return `
-                    <div class="objective-item">
+                    <div class="objective-item" onclick="toggleObjectiveActions(${objective.id})" style="cursor: pointer;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <h4>${statusIcon} ${objective.name}</h4>
                             <span style="font-size: 12px; color: #999;">${statusText}</span>
@@ -2302,14 +2715,41 @@
                             <span>${formatBTC(appData.stack)} / ${formatBTC(objective.target)} ₿</span>
                             ${objective.date ? `<span>Échéance: ${new Date(objective.date).toLocaleDateString('fr-FR')}</span>` : ''}
                         </div>
-                        <div style="margin-top: 10px;">
-                            ${!objective.completed && !objective.archived ? `<button class="btn" style="padding: 5px 10px; font-size: 11px; margin-right: 5px;" onclick="completeObjective(${objective.id})">Marquer Atteint</button>` : ''}
-                            ${!objective.archived ? `<button class="btn btn-secondary" style="padding: 5px 10px; font-size: 11px; margin-right: 5px;" onclick="archiveObjective(${objective.id})">Archiver</button>` : ''}
-                            <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 11px;" onclick="deleteObjective(${objective.id})">Supprimer</button>
+                        <div id="objectiveActions-${objective.id}" class="objective-actions" style="margin-top: 10px; display: none; opacity: 0; transition: all 0.3s ease;">
+                            ${!objective.completed && !objective.archived ? `<button class="btn" style="padding: 5px 10px; font-size: 11px; margin-right: 5px;" onclick="event.stopPropagation(); completeObjective(${objective.id})">Marquer Atteint</button>` : ''}
+                            ${!objective.archived ? `<button class="btn btn-secondary" style="padding: 5px 10px; font-size: 11px; margin-right: 5px;" onclick="event.stopPropagation(); archiveObjective(${objective.id})">Archiver</button>` : ''}
+                            <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 11px;" onclick="event.stopPropagation(); deleteObjective(${objective.id})">Supprimer</button>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // Toggle objective actions visibility
+        function toggleObjectiveActions(objectiveId) {
+            const actionsDiv = document.getElementById(`objectiveActions-${objectiveId}`);
+            if (!actionsDiv) return;
+
+            // Hide all other objective actions first
+            document.querySelectorAll('.objective-actions').forEach(actions => {
+                if (actions.id !== `objectiveActions-${objectiveId}`) {
+                    actions.style.display = 'none';
+                    actions.style.opacity = '0';
+                }
+            });
+
+            // Toggle current objective actions
+            if (actionsDiv.style.display === 'none' || actionsDiv.style.display === '') {
+                actionsDiv.style.display = 'block';
+                setTimeout(() => {
+                    actionsDiv.style.opacity = '1';
+                }, 10);
+            } else {
+                actionsDiv.style.opacity = '0';
+                setTimeout(() => {
+                    actionsDiv.style.display = 'none';
+                }, 300);
+            }
         }
 
         // Check objectives completion
@@ -2463,6 +2903,9 @@
                 }
             });
 
+            // Apply theme on startup
+            applyTheme();
+
             // Update displays
             updateBTCDisplay();
             updateTransactionHistory();
@@ -2483,6 +2926,7 @@
             // Initialize chart
             setTimeout(() => {
                 initChart();
+                initExclusivityChart();
             }, 200);
 
             console.log('StackTrack initialized successfully!');
@@ -2496,6 +2940,11 @@
                 stackForm.addEventListener('submit', function (e) {
                     e.preventDefault();
                     addToStack();
+                    // Auto-close form after successful submission
+                    const formContainer = document.getElementById('stackFormContainer');
+                    if (formContainer) {
+                        formContainer.style.display = 'none';
+                    }
                 });
             }
 
@@ -2558,6 +3007,9 @@
         window.removeFromStack = removeFromStack;
         window.toggleForm = toggleForm;
         window.goToSlide = goToSlide;
+        window.toggleObjectiveActions = toggleObjectiveActions;
+        window.setTheme = setTheme;
+        window.resetApp = resetApp;
 
         console.log('StackTrack script loaded successfully!');
     </script>
