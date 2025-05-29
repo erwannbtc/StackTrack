@@ -2,6 +2,9 @@
 <html lang="fr">
 
 <head>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons\DE3B8ECE-83C1-4F42-BAC8-BCDE12A6A2AA.jpeg">
+    <meta name="theme-color" content="#f7931a" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StackTrack - Bitcoin Portfolio Tracker</title>
@@ -171,16 +174,16 @@
 
         .nav-tabs {
             display: flex;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(25px) saturate(200%);
+            -webkit-backdrop-filter: blur(25px) saturate(200%);
             margin: 0 20px;
             border-radius: 15px;
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             position: relative;
             z-index: 2;
         }
@@ -273,14 +276,14 @@
             position: relative;
             overflow: hidden;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(15px) saturate(150%);
-            -webkit-backdrop-filter: blur(15px) saturate(150%);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(25px) saturate(200%);
+            -webkit-backdrop-filter: blur(25px) saturate(200%);
             border-left: 4px solid var(--theme-primary);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 
                 0 4px 20px rgba(0, 0, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
             height: 120px;
         }
 
@@ -469,15 +472,15 @@
             position: relative;
             height: 300px;
             margin: 20px 0;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(15px) saturate(150%);
-            -webkit-backdrop-filter: blur(15px) saturate(150%);
+            background: rgba(255, 255, 255, 0.01);
+            backdrop-filter: blur(25px) saturate(200%);
+            -webkit-backdrop-filter: blur(25px) saturate(200%);
             border-radius: 15px;
             padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 
                 0 4px 20px rgba(0, 0, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
         }
 
         .chart-percentage {
@@ -753,16 +756,16 @@
         }
 
         .stat-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(25px) saturate(200%);
+            -webkit-backdrop-filter: blur(25px) saturate(200%);
             border-radius: 15px;
             padding: 20px;
             text-align: center;
             box-shadow: 
                 0 4px 20px rgba(0, 0, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             transition: all 0.3s ease;
         }
 
@@ -771,7 +774,7 @@
             transform: translateY(-2px);
             box-shadow: 
                 0 8px 25px rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+                inset 0 1px 0 rgba(255, 255, 255, 0.25);
         }
 
         .stat-number {
@@ -3073,6 +3076,13 @@
         window.resetApp = resetApp;
 
         console.log('StackTrack script loaded successfully!');
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(() => console.log('✅ Service Worker enregistré !'))
+          .catch(error => console.log('❌ Erreur Service Worker :', error));
+      }
     </script>
 </body>
 
