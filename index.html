@@ -2,9 +2,6 @@
 <html lang="fr">
 
 <head>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icons\DE3B8ECE-83C1-4F42-BAC8-BCDE12A6A2AA.jpeg">
-    <meta name="theme-color" content="#f7931a" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StackTrack - Bitcoin Portfolio Tracker</title>
@@ -3076,13 +3073,6 @@
         window.resetApp = resetApp;
 
         console.log('StackTrack script loaded successfully!');
-    </script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(() => console.log('✅ Service Worker enregistré !'))
-          .catch(error => console.log('❌ Erreur Service Worker :', error));
-      }
     </script>
 </body>
 
