@@ -486,15 +486,18 @@
       (others ? ' · ' + others + ' autre' + (others > 1 ? 's' : '') : '') + '</span><span class="title">Historique</span></div>' + unitToggle() + '</div>';
 
     if (!es.length) {
-      html += '<div class="glass empty"><p>Aucune entrée pour l’instant.<br>Ajoute ton premier achat, ou importe une sauvegarde depuis l’onglet Réseau.</p>' +
-        '<a href="#/ajout" class="glass-orange pill-btn">' + ICON.plus + ' Ajouter</a></div>';
-      view.innerHTML = html; bindUnit(renderHistory); return;
+      html += '<div class="glass empty"><p>Aucune entrée pour l’instant.<br>Ajoute ton premier achat, ou importe une sauvegarde (.json).</p>' +
+        '<div class="btn-row" style="width:100%"><a href="#/ajout" class="glass-orange pill-btn">' + ICON.plus + ' Ajouter</a>' +
+        '<button class="glass pill-btn" data-backup="import">' + ICON.import + ' Importer</button></div></div>';
+      view.innerHTML = html; bindUnit(renderHistory); bindBackup(); return;
     }
 
     html += '<div class="grid2">' +
       '<div class="glass card" style="border-radius:24px;padding:14px 16px;gap:6px"><span class="k">Moyenne / achat</span><span class="mono v20">' + (buys.length ? fmtU(avg) : '—') + '</span><span class="sub">' + unitL() + '</span></div>' +
       '<div class="glass card" style="border-radius:24px;padding:14px 16px;gap:6px"><span class="k">Plus gros achat</span><span class="mono v20">' + (big ? fmtU(big.sats) : '—') + '</span><span class="sub">' + unitL() + (big ? ' · ' + fmtMonth(parseD(big.date), true).toLowerCase() : '') + '</span></div>' +
-      '</div>';
+      '</div>' +
+      '<div class="btn-row"><button class="glass pill-btn" data-backup="export">' + ICON.export + ' Exporter .json</button>' +
+        '<button class="glass pill-btn" data-backup="import">' + ICON.import + ' Importer .json</button></div>';
 
     var groups = [], cur = null;
     es.forEach(function (e) {
@@ -519,6 +522,7 @@
     });
     view.innerHTML = html;
     bindUnit(renderHistory);
+    bindBackup();
     view.querySelectorAll('[data-edit]').forEach(function (b) {
       b.onclick = function () { location.hash = '#/ajout/' + encodeURIComponent(b.dataset.edit); };
     });
@@ -633,15 +637,14 @@
       '<div class="glass card" style="gap:12px">' +
         '<p class="small-note">' + state.entries.length + ' entrée' + (state.entries.length > 1 ? 's' : '') + ' enregistrée' + (state.entries.length > 1 ? 's' : '') +
           ' uniquement sur cet appareil. Exporte une sauvegarde de temps en temps.</p>' +
-        '<div class="btn-row"><button class="glass pill-btn" id="btnExport">' + ICON.export + ' Exporter</button><button class="glass pill-btn" id="btnImport">' + ICON.import + ' Importer</button></div>' +
+        '<div class="btn-row"><button class="glass pill-btn" data-backup="export">' + ICON.export + ' Exporter .json</button><button class="glass pill-btn" data-backup="import">' + ICON.import + ' Importer .json</button></div>' +
         '<p class="small-note">L’import accepte les sauvegardes JSON de cette app et de l’ancienne version de StackTrack.</p>' +
         '<div class="btn-row"><a class="glass pill-btn" href="v1/" style="color:var(--muted-2)">Ancienne version</a><button class="glass pill-btn danger" id="btnReset">Tout effacer</button></div>' +
       '</div>' +
       '<p class="small-note" style="text-align:center">Données réseau : mempool.space</p>';
 
     view.innerHTML = html;
-    document.getElementById('btnExport').onclick = exportData;
-    document.getElementById('btnImport').onclick = function () { document.getElementById('importFile').click(); };
+    bindBackup();
     document.getElementById('btnReset').onclick = function () {
       if (!state.entries.length) return toast('Rien à effacer');
       if (confirm('Effacer définitivement tes ' + state.entries.length + ' entrées de cet appareil ?\n\nPense à exporter une sauvegarde avant.') &&
@@ -663,6 +666,13 @@
   function stopNetPolling() { if (netTimer) clearInterval(netTimer); netTimer = null; }
 
   // ---------- Export / import ----------
+  function bindBackup() {
+    view.querySelectorAll('[data-backup]').forEach(function (b) {
+      b.onclick = b.dataset.backup === 'export'
+        ? function () { if (!state.entries.length) return toast('Rien à exporter'); exportData(); }
+        : function () { document.getElementById('importFile').click(); };
+    });
+  }
   function exportData() {
     var json = JSON.stringify({ app: 'StackTrack', version: 2, exportDate: new Date().toISOString(), entries: state.entries }, null, 2);
     var name = 'stacktrack-' + todayISO() + '.json';
