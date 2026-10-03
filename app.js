@@ -860,6 +860,149 @@
     paint();
   }
 
+  // ---------- Barre d'onglets Liquid Glass ----------
+  // La sélection est une « goutte » : on peut la glisser au doigt d'un onglet à l'autre (elle grossit comme une loupe),
+  // elle s'étire selon sa vitesse puis reprend sa forme, et s'aimante sur l'onglet au lâcher. Un simple toucher marche aussi.
+  var TabBar = (function () {
+    var bar = document.getElementById('tabs');
+    var wrap = document.getElementById('pillWrap');
+    var pill = document.getElementById('pill');
+    var links = Array.prototype.slice.call(bar.querySelectorAll('[data-tab]'));
+    var PAD = 8;
+    var width = 0, seg = 0, pillW = 0;
+    var x = 0, v = 0, target = 0, placed = false;
+    var activeIdx = 0, hoverIdx = null;
+    var drag = null, dragging = false, suppressClick = false;
+    var raf = null, last = 0, lastDragX = 0, lastDragT = 0;
+
+    function clamp(n, a, b) { return Math.min(b, Math.max(a, n)); }
+    function centerOf(i) { return PAD + seg * (i + 0.5); }
+    function idxAt(px) { return clamp(Math.floor((px - PAD) / seg), 0, links.length - 1); }
+
+    function measure() {
+      width = bar.offsetWidth;
+      seg = width ? (width - PAD * 2) / links.length : 0;
+      pillW = Math.max(0, seg - 6);
+      pill.parentNode.style.width = pillW + 'px';
+      if (seg && !dragging) { target = centerOf(activeIdx); if (!placed) { x = target; v = 0; placed = true; } }
+      paint();
+      kick();
+    }
+    function paint() {
+      var stretch = 1 + Math.min(Math.abs(v) / 2600, 0.3);
+      wrap.style.left = (x - pillW / 2) + 'px';
+      pill.style.transform = 'scale(' + stretch.toFixed(3) + ',' + (1 / Math.sqrt(stretch)).toFixed(3) + ')';
+      var lit = dragging && hoverIdx !== null ? hoverIdx : activeIdx;
+      links.forEach(function (a, i) { a.classList.toggle('lit', i === lit); });
+    }
+    // Ressort (raideur 360, amortissement 28, masse 0,9) — même réglage que Verdex
+    function step(now) {
+      raf = null;
+      var dt = Math.min(0.032, (now - (last || now)) / 1000) || 0.016;
+      last = now;
+      if (dragging) {
+        v *= 0.85; // la vitesse retombe si le doigt s'arrête
+      } else {
+        var a = (360 * (target - x) - 28 * v) / 0.9;
+        v += a * dt; x += v * dt;
+        if (Math.abs(target - x) < 0.3 && Math.abs(v) < 4) { x = target; v = 0; }
+      }
+      paint();
+      if (dragging || x !== target || v !== 0) kick(); else last = 0;
+    }
+    function kick() { if (!raf) raf = requestAnimationFrame(step); }
+
+    function light(cx, cy) {
+      var r = bar.getBoundingClientRect();
+      bar.style.setProperty('--lx', (cx - r.left) + 'px');
+      bar.style.setProperty('--ly', (cy - r.top) + 'px');
+    }
+    function localX(cx) {
+      var r = bar.getBoundingClientRect();
+      return (cx - r.left) * (width / r.width); // corrige le léger agrandissement pendant l'appui
+    }
+    function tick() { if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) { /* ignore */ } } }
+    function go(i) {
+      var route = links[i].dataset.tab;
+      if (route === currentRoute()) window.scrollTo({ top: 0, behavior: 'smooth' });
+      else location.hash = '#/' + route;
+    }
+
+    bar.addEventListener('pointerdown', function (e) {
+      if (!seg) measure();
+      if (!seg) return;
+      drag = { startX: e.clientX, lastX: e.clientX, active: false };
+      bar.classList.add('pressed');
+      light(e.clientX, e.clientY);
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', end);
+      window.addEventListener('pointercancel', end);
+    });
+    function move(ev) {
+      if (!drag) return;
+      drag.lastX = ev.clientX;
+      light(ev.clientX, ev.clientY);
+      if (!drag.active && Math.abs(ev.clientX - drag.startX) > 6) {
+        drag.active = true; dragging = true;
+        wrap.classList.add('dragging');
+        lastDragX = x; lastDragT = performance.now();
+      }
+      if (drag.active) {
+        var nx = clamp(localX(ev.clientX), centerOf(0), centerOf(links.length - 1));
+        var now = performance.now(), dt = Math.max(1, now - lastDragT) / 1000;
+        v = v * 0.5 + ((nx - lastDragX) / dt) * 0.5;
+        lastDragX = nx; lastDragT = now;
+        x = nx;
+        var i = idxAt(nx);
+        if (hoverIdx !== null && hoverIdx !== i) tick();
+        hoverIdx = i;
+        kick();
+      }
+    }
+    function end(ev) {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      bar.classList.remove('pressed');
+      var d = drag; drag = null;
+      if (d && d.active) {
+        suppressClick = true;
+        setTimeout(function () { suppressClick = false; }, 0);
+        // pointercancel n'a pas de coordonnées fiables : on garde la dernière position du doigt
+        var cx = ev.type === 'pointerup' ? ev.clientX : d.lastX;
+        var i = idxAt(clamp(localX(cx), centerOf(0), centerOf(links.length - 1)));
+        dragging = false; hoverIdx = null;
+        wrap.classList.remove('dragging');
+        activeIdx = i; target = centerOf(i);
+        kick();
+        go(i);
+      }
+    }
+    links.forEach(function (a, i) {
+      a.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        if (suppressClick) return;
+        go(i);
+      });
+      a.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+      a.setAttribute('draggable', 'false');
+      a.addEventListener('dragstart', function (ev) { ev.preventDefault(); });
+    });
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(measure).observe(bar);
+    window.addEventListener('resize', measure);
+
+    return {
+      setActive: function (route) {
+        var i = links.findIndex(function (a) { return a.dataset.tab === route; });
+        if (i < 0) return;
+        activeIdx = i;
+        if (!dragging) { target = centerOf(i); }
+        if (!width) measure();
+        kick();
+      }
+    };
+  })();
+
   // ---------- Routage ----------
   var lastMainRoute = 'stack';
   function currentRoute() {
@@ -879,6 +1022,7 @@
     tabbar.querySelectorAll('[data-tab]').forEach(function (a) {
       if (a.dataset.tab === route) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
+    TabBar.setActive(route);
     if (route !== 'reseau') stopNetPolling();
     if (route !== 'ajout') lastMainRoute = route;
 

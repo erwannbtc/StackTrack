@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2.0.1">
+<link rel="stylesheet" href="style.css?v=2.1.0">
 </head>
 <body>
 <div class="halos" aria-hidden="true">
@@ -27,7 +27,9 @@
 <main id="view" aria-live="polite"></main>
 
 <nav class="tabbar" id="tabbar" aria-label="Navigation principale">
-  <div class="tabs glass">
+  <div class="tabs liquid-glass" id="tabs">
+    <span class="lg-lens" aria-hidden="true"></span>
+    <span class="pill-wrap" id="pillWrap" aria-hidden="true"><span class="lg-pill" id="pill"></span></span>
     <a href="#/stack" data-tab="stack">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
       Stack</a>
@@ -49,6 +51,6 @@
 <div class="toast glass" id="toast" role="status"></div>
 <input type="file" id="importFile" hidden>
 
-<script src="app.js?v=2.0.1"></script>
+<script src="app.js?v=2.1.0"></script>
 </body>
 </html>

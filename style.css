@@ -205,9 +205,59 @@ nav.tabbar {
   position: fixed; left: 0; right: 0; bottom: calc(var(--safe-bottom) + 20px); z-index: 10;
   max-width: 480px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 12px;
 }
-nav.tabbar .tabs { flex: 1 1 auto; height: 62px; border-radius: 999px; display: flex; align-items: center; justify-content: space-around; padding: 0 6px; }
-nav.tabbar .tabs a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 10px; border-radius: 999px; color: var(--muted-2); font-size: 11px; font-weight: 500; min-width: 44px; }
-nav.tabbar .tabs a[aria-current="page"] { background: rgba(247,147,26,0.16); color: var(--orange); font-weight: 600; padding: 7px 12px; }
+nav.tabbar .tabs {
+  position: relative; flex: 1 1 auto; height: 62px; border-radius: 999px; display: flex; align-items: center;
+  padding: 0 8px; touch-action: none; user-select: none; -webkit-user-select: none;
+  transition: transform .35s cubic-bezier(.3,1.6,.5,1);
+}
+nav.tabbar .tabs.pressed { transform: scale(1.03); --lglow: 0.11; }
+nav.tabbar .tabs a {
+  position: relative; z-index: 1; flex: 1 1 0; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; color: var(--muted-2); font-size: 11px; font-weight: 500; min-width: 44px; -webkit-touch-callout: none; -webkit-user-drag: none; user-select: none; -webkit-user-select: none;
+  transition: color .2s ease;
+}
+nav.tabbar .tabs a svg { pointer-events: none; transition: transform .3s cubic-bezier(.3,1.6,.5,1), filter .2s ease; }
+nav.tabbar .tabs a.lit { color: var(--orange); font-weight: 600; }
+nav.tabbar .tabs a.lit svg { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(247,147,26,0.45)); }
+
+/* Goutte de sélection */
+.pill-wrap { position: absolute; top: 5px; bottom: 5px; left: 0; z-index: 0; pointer-events: none; transition: transform .3s cubic-bezier(.3,1.5,.5,1); will-change: transform; }
+.pill-wrap.dragging { transform: scale(1.14); }
+.lg-pill {
+  display: block; width: 100%; height: 100%; border-radius: 999px; will-change: transform;
+  background: linear-gradient(180deg, rgba(255,190,110,0.2) 0%, rgba(247,147,26,0.08) 100%);
+  box-shadow: inset 0 1px 0.5px rgba(255,220,180,0.34), inset 0 -6px 12px rgba(0,0,0,0.18), 0 0 0 1px rgba(247,147,26,0.22), 0 4px 14px rgba(0,0,0,0.38);
+}
+
+/* Liquid Glass (imitation iOS 26) : verre fumé → reflet diagonal → liseré → lentille des bords → lumière sous le doigt */
+.liquid-glass {
+  position: relative; isolation: isolate;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.1) 100%), rgba(8,8,10,0.5);
+  -webkit-backdrop-filter: blur(10px) saturate(180%) brightness(0.72) contrast(1.05);
+  backdrop-filter: blur(10px) saturate(180%) brightness(0.72) contrast(1.05);
+  box-shadow: inset 0 1px 0.5px rgba(255,255,255,0.2), inset 0 -10px 20px rgba(0,0,0,0.22), 0 10px 30px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.3);
+}
+.liquid-glass::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background:
+    radial-gradient(160px 90px at var(--lx, 50%) var(--ly, 0%), rgba(255,255,255,var(--lglow, 0)) 0%, transparent 70%),
+    linear-gradient(125deg, rgba(255,255,255,0.06) 0%, transparent 34%, rgba(0,0,0,0.1) 100%);
+  transition: --lglow .25s;
+}
+.liquid-glass::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.015) 60%, rgba(255,255,255,0.13) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.lg-lens {
+  position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  -webkit-backdrop-filter: blur(3px) saturate(220%) brightness(0.82);
+  backdrop-filter: blur(3px) saturate(220%) brightness(0.82);
+  -webkit-mask-image: radial-gradient(closest-side, transparent 72%, #000 100%);
+  mask-image: radial-gradient(closest-side, transparent 72%, #000 100%);
+}
+@property --lglow { syntax: '<number>'; initial-value: 0; inherits: false; }
 nav.tabbar .fab { width: 62px; height: 62px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--on-orange); }
 nav.tabbar.hidden { display: none; }
 
@@ -218,5 +268,4 @@ nav.tabbar.hidden { display: none; }
   .total { font-size: 38px; }
   .amount-big { font-size: 44px; }
   .hero-num { font-size: 34px; }
-  nav.tabbar .tabs a { padding: 7px 6px; }
 }

@@ -1,6 +1,6 @@
 /* Service worker StackTrack : réseau d'abord (toujours la dernière version), cache en secours hors ligne */
-var CACHE = 'stacktrack-v2.0.1';
-var ASSETS = ['./', './index.html', './style.css?v=2.0.1', './app.js?v=2.0.1', './manifest.json',
+var CACHE = 'stacktrack-v2.1.0';
+var ASSETS = ['./', './index.html', './style.css?v=2.1.0', './app.js?v=2.1.0', './manifest.json',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
